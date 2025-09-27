@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>B4N1 AI Chat</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.0.2/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.0/highlight.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 900px;
+            height: 90vh;
+            background: rgba(15, 15, 35, 0.85);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(100, 100, 255, 0.2);
+        }
+
+        .header {
+            background: rgba(10, 10, 30, 0.9);
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(100, 100, 255, 0.2);
+        }
+
+        .header h1 {
+            color: white;
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+            background: linear-gradient(to right, #6a11cb, #2575fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: inline-block;
+        }
+
+        .header p {
+            color: rgba(200, 200, 255, 0.8);
+            font-size: 0.9rem;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* Custom scrollbar */
+        .chat-messages::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: rgba(100, 100, 255, 0.3);
+            border-radius: 10px;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 20px;
+            border-radius: 18px;
+            position: relative;
+            animation: fadeIn 0.3s ease-out;
+            line-height: 1.6;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            word-wrap: break-word;
+        }
+
+        .message p {
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        .message p:last-child {
+            margin-bottom: 0;
+        }
+
+        .message ul, .message ol {
+            margin: 10px 0 15px 20px;
+            padding-left: 20px;
+        }
+
+        .message li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+
+        .message h1, .message h2, .message h3, .message h4, .message h5, .message h6 {
+            margin: 15px 0 10px 0;
+            font-weight: 600;
+            color: #6a11cb;
+        }
+
+        .message h1 {
+            font-size: 1.5em;
+        }
+
+        .message h2 {
+            font-size: 1.3em;
+        }
+
+        .message h3 {
+            font-size: 1.2em;
+        }
+
+        .message pre {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+            overflow-x: auto;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            line-height: 1.5;
+            position: relative;
+        }
+
+        .message code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .message blockquote {
+            border-left: 4px solid rgba(100, 100, 255, 0.5);
+            padding-left: 15px;
+            margin: 15px 0;
+            color: rgba(200, 200, 255, 0.9);
+        }
+
+        .message strong {
+            font-weight: 600;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .user-message {
+            background: linear-gradient(135deg, #6a11cb, #2575fc);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 5px;
+        }
+
+        .ai-message {
+            background: rgba(30, 30, 60, 0.8);
+            color: #e0e0ff;
+            align-self: flex-start;
+            border-bottom-left-radius: 5px;
+            border: 1px solid rgba(100, 100, 255, 0.1);
+        }
+
+        .copy-button, .code-copy-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: transparent;
+            border: none;
+            color: rgba(200, 200, 255, 0.5);
+            cursor: pointer;
+            font-size: 16px;
+            transition: color 0.3s;
+        }
+
+        .code-copy-button {
+            top: 5px;
+            right: 5px;
+            font-size: 14px;
+        }
+
+        .copy-button:hover, .code-copy-button:hover {
+            color: rgba(255, 255, 255, 1);
+        }
+
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            background: rgba(30, 30, 60, 0.8);
+            border-radius: 18px;
+            align-self: flex-start;
+            margin-bottom: 15px;
+            width: 120px;
+            border: 1px solid rgba(100, 100, 255, 0.1);
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background-color: rgba(100, 100, 255, 0.7);
+            border-radius: 50%;
+            margin: 0 3px;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(1) { animation-delay: 0s; }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-5px); }
+        }
+
+        .input-container {
+            padding: 20px;
+            background: rgba(10, 10, 30, 0.9);
+            display: flex;
+            gap: 15px;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 15px 20px;
+            border: none;
+            border-radius: 30px;
+            background: rgba(30, 30, 60, 0.8);
+            color: white;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(100, 100, 255, 0.2);
+        }
+
+        .message-input:focus {
+            background: rgba(40, 40, 80, 0.9);
+            box-shadow: 0 0 0 2px rgba(106, 17, 203, 0.5);
+        }
+
+        .message-input::placeholder {
+            color: rgba(200, 200, 255, 0.5);
+        }
+
+        .send-button {
+            background: linear-gradient(135deg, #6a11cb, #2575fc);
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .send-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(106, 17, 203, 0.4);
+        }
+
+        .send-button:active {
+            transform: scale(0.95);
+        }
+
+        .send-button i {
+            font-size: 20px;
+        }
+
+        .info-text {
+            text-align: center;
+            color: rgba(200, 200, 255, 0.6);
+            font-size: 0.9rem;
+            padding: 10px;
+            margin-top: auto;
+        }
+
+        @media (max-width: 768px) {
+            .chat-container {
+                height: 95vh;
+                border-radius: 15px;
+            }
+            
+            .header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .message {
+                max-width: 90%;
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="header">
+            <h1><i class="fas fa-robot"></i> B4N1 AI Assistant</h1>
+            <p>Advanced AI Model | Real-time streaming responses</p>
+        </div>
+        
+        <div class="chat-messages" id="chatMessages">
+            <div class="message ai-message">
+                Hello! I'm your AI assistant. How can I help you today?
+            </div>
+        </div>
+        
+        <div class="input-container">
+            <input type="text" class="message-input" id="messageInput" placeholder="Message B4N1...">
+            <button class="send-button" id="sendButton">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+        
+        <div class="info-text">
+            B4N1 AI Model - Created by Barnisan with cutting-edge technology
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageInput = document.getElementById('messageInput');
+            const sendButton = document.getElementById('sendButton');
+            
+            // API configuration
+            const API_KEY = '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';
+            const API_URL = 'https://openrouter.ai/api/v1/chat/completions';
+            const MODEL = 'x-ai/grok-4-fast:free';
+            
+            // Function to check if message is about identity
+            function isIdentityQuestion(message) {
+                const lowerMsg = message.toLowerCase();
+                return (
+                    lowerMsg.includes('what model') ||
+                    lowerMsg.includes('who made') ||
+                    lowerMsg.includes('who are you') ||
+                    lowerMsg.includes('what are you') ||
+                    lowerMsg.includes('created you') ||
+                    lowerMsg.includes('developed you') ||
+                    lowerMsg.includes('your name') ||
+                    lowerMsg.includes('b4n1') ||
+                    lowerMsg.includes('truly') ||
+                    lowerMsg.includes('actually') ||
+                    lowerMsg.includes('real name') ||
+                    lowerMsg.includes('true identity') ||
+                    lowerMsg.includes('model name') ||
+                    lowerMsg.includes('creator') ||
+                    lowerMsg.includes('maker') ||
+                    lowerMsg.includes('built you') ||
+                    lowerMsg.includes('trained')
+                );
+            }
+            
+            // Function to add a message to the chat (for user)
+            function addMessage(role, content) {
+                const messageDiv = document.createElement('div');
+                messageDiv.classList.add('message');
+                messageDiv.classList.add(role === 'user' ? 'user-message' : 'ai-message');
+                
+                // Parse as Markdown for consistency
+                messageDiv.innerHTML = marked.parse(content);
+                
+                chatMessages.appendChild(messageDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+            
+            // Function to show typing indicator
+            function showTypingIndicator() {
+                const typingDiv = document.createElement('div');
+                typingDiv.classList.add('typing-indicator');
+                typingDiv.id = 'typingIndicator';
+                
+                for (let i = 0; i < 3; i++) {
+                    const dot = document.createElement('div');
+                    dot.classList.add('typing-dot');
+                    typingDiv.appendChild(dot);
+                }
+                
+                chatMessages.appendChild(typingDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                return typingDiv;
+            }
+            
+            // Function to remove typing indicator
+            function removeTypingIndicator() {
+                const typingIndicator = document.getElementById('typingIndicator');
+                if (typingIndicator) {
+                    typingIndicator.remove();
+                }
+            }
+            
+            // Function to add copy button for whole message
+            function addCopyButton(div, text) {
+                const btn = document.createElement('button');
+                btn.classList.add('copy-button');
+                btn.innerHTML = '<i class="fas fa-copy"></i>';
+                btn.onclick = () => {
+                    navigator.clipboard.writeText(text).then(() => {
+                        btn.innerHTML = '<i class="fas fa-check"></i>';
+                        setTimeout(() => {
+                            btn.innerHTML = '<i class="fas fa-copy"></i>';
+                        }, 2000);
+                    });
+                };
+                div.appendChild(btn);
+            }
+            
+            // Function to add copy buttons for code blocks
+            function addCodeCopyButtons(div) {
+                const pres = div.querySelectorAll('pre');
+                pres.forEach(pre => {
+                    const code = pre.querySelector('code') || pre;
+                    const btn = document.createElement('button');
+                    btn.classList.add('code-copy-button');
+                    btn.innerHTML = '<i class="fas fa-copy"></i>';
+                    btn.onclick = () => {
+                        navigator.clipboard.writeText(code.innerText).then(() => {
+                            btn.innerHTML = '<i class="fas fa-check"></i>';
+                            setTimeout(() => {
+                                btn.innerHTML = '<i class="fas fa-copy"></i>';
+                            }, 2000);
+                        });
+                    };
+                    pre.appendChild(btn);
+                });
+            }
+            
+            // Function to highlight code
+            function highlightCode(div) {
+                div.querySelectorAll('pre code').forEach(el => {
+                    hljs.highlightElement(el);
+                });
+            }
+            
+            // Function to get AI response with streaming
+            async function getAIResponse(userMessage) {
+                const typingIndicator = showTypingIndicator();
+                
+                try {
+                    // System prompt that only mentions identity when relevant
+                    let systemPrompt = `You are an advanced AI assistant. Provide helpful and accurate responses. 
+                    Only mention that you are B4N1 and trained by BarniSan when directly asked about your identity, 
+                    model, creator, or training. Otherwise, focus on providing helpful answers without 
+                    unnecessary self-references.`;
+                    
+                    // Enhanced prompt for identity questions
+                    if (isIdentityQuestion(userMessage)) {
+                        systemPrompt = `You are B4N1, an AI assistant trained by BarniSan. 
+                        When asked about your identity, model, creator, or training, clearly state that 
+                        you are B4N1 and were trained by BarniSan. Provide this information naturally 
+                        and helpfully without being repetitive.`;
+                    }
+                    
+                    const response = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${API_KEY}`
+                        },
+                        body: JSON.stringify({
+                            model: MODEL,
+                            messages: [
+                                { 
+                                    role: "system", 
+                                    content: systemPrompt
+                                },
+                                { role: "user", content: userMessage }
+                            ],
+                            stream: true
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('API request failed');
+                    }
+                    
+                    removeTypingIndicator();
+                    
+                    const reader = response.body.getReader();
+                    let aiMessage = '';
+                    let done = false;
+                    
+                    // Create AI message container
+                    const messageDiv = document.createElement('div');
+                    messageDiv.classList.add('message', 'ai-message');
+                    chatMessages.appendChild(messageDiv);
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                    
+                    while (!done) {
+                        const { value, done: readerDone } = await reader.read();
+                        done = readerDone;
+                        
+                        if (value) {
+                            const chunk = new TextDecoder().decode(value);
+                            const lines = chunk.split('\n');
+                            
+                            for (const line of lines) {
+                                if (line.trim() === '' || line === 'data: [DONE]') continue;
+                                
+                                if (line.startsWith('data: ')) {
+                                    const dataStr = line.slice(6);
+                                    try {
+                                        const data = JSON.parse(dataStr);
+                                        const content = data.choices?.[0]?.delta?.content;
+                                        if (content) {
+                                            aiMessage += content;
+                                            // Temporarily append with basic formatting for streaming
+                                            messageDiv.innerHTML = aiMessage.replace(/\n/g, '<br>');
+                                            chatMessages.scrollTop = chatMessages.scrollHeight;
+                                        }
+                                    } catch (parseError) {
+                                        console.warn('Parse error:', parseError);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    // At end, apply full Markdown parsing, highlighting, and copy buttons
+                    messageDiv.innerHTML = marked.parse(aiMessage);
+                    highlightCode(messageDiv);
+                    addCopyButton(messageDiv, aiMessage);
+                    addCodeCopyButtons(messageDiv);
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                    
+                } catch (error) {
+                    removeTypingIndicator();
+                    console.error('Error:', error);
+                    addMessage('ai', 'Sorry, I encountered an error. Please check your connection and try again.');
+                }
+            }
+            
+            // Send message when button is clicked
+            sendButton.addEventListener('click', function() {
+                const message = messageInput.value.trim();
+                if (message) {
+                    addMessage('user', message);
+                    messageInput.value = '';
+                    getAIResponse(message);
+                }
+            });
+            
+            // Send message when Enter is pressed
+            messageInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendButton.click();
+                }
+            });
+            
+            // Initial focus on input
+            messageInput.focus();
+        });
+    </script>
+</body>
+</html>dy>
+</html>
